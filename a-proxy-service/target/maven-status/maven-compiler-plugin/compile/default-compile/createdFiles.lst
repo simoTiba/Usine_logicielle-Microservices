@@ -1,0 +1,11 @@
+org/opendevup/services/diplomeClient.class
+org/opendevup/AProxyServiceApplication.class
+org/opendevup/services/IntegrationClient.class
+org/opendevup/services/Diplome.class
+org/opendevup/services/serviceClient.class
+org/opendevup/services/proxy.class
+org/opendevup/services/Service.class
+org/opendevup/services/FeignExample.class
+org/opendevup/services/Myconfiguration.class
+org/opendevup/services/Enseignant.class
+org/opendevup/services/ProxyGatewayRestService.class
