@@ -3,6 +3,7 @@ version: '2.1'
 services:
 
     config:
+        build: ./a-config-service
         image: config-service
         ports:
             - 8888:8888
@@ -10,6 +11,7 @@ services:
         container_name: config 
 
     eureka:
+        build: ./a-eureka-service
         image: eureka-service
         ports:
             - 8761:8761
@@ -19,6 +21,7 @@ services:
         container_name: eureka
 
     diplome:
+        build: ./a-diplome-service
         image: diplome-service
         ports:
             - 3333:3333
@@ -29,6 +32,7 @@ services:
         container_name: diplome
 
     service:
+        build: ./a-service-service
         image: services-service
         ports:
             - 1111:1111
@@ -39,6 +43,7 @@ services:
         container_name: services
 
     enseignant:
+        build: ./a-enseignant-service
         image: enseignant-service
         ports:
             - 2222:2222
@@ -49,6 +54,7 @@ services:
         container_name: enseignant        
 
     proxy:
+        build: ./a-proxy-service
         image: proxy-service
         ports:
             - 9999:9999
