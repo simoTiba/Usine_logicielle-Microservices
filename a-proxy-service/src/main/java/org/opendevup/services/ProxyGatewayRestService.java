@@ -6,21 +6,33 @@ import java.util.Collection;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.Resources;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+
 
 
 
@@ -31,91 +43,101 @@ class Myconfiguration{
 	public RestTemplate restTemplate() {
 	    return new RestTemplate();
 	}
+
 }
-
-// @Configuration
-// class Myconfiguration_2{
-// 	@LoadBalanced
-// 	@Bean
-// 	diplomeClient diplomeClient() {
-// 	return new diplomeClient() {
-		
-// 		private diplomeClient diplomeClient;
-
-// 		@Override
-// 		public
-// 		Collection<Diplome> getDips(String userId) {
-// 			return this.diplomeClient.getDips(userId);
-// 		}
-// 	};
-// }
-// 	@LoadBalanced
-// 	@Bean
-// 	serviceClient serviceClient() {
-// 	return new serviceClient() {
-		
-// 		private serviceClient serviceClient;
-
-// 		@Override
-// 		public Collection<Service> getService(String ueId) {
-// 			return this.serviceClient.getService(ueId);
-// 		}
-// 	};
-// }
-	
-// }
-
-
 
 
 @RestController
 public class ProxyGatewayRestService {
 
-	@RequestMapping(value = "/")
+	@RequestMapping(value = "/",method=RequestMethod.GET)
 	public String available() {
 		return "Welcome To Proxy Service!";
 	}
 	
-//@Autowired
-//private RestTemplate restTemplate;
-
-//@RequestMapping(value="/services") 
-//public Collection<Service> listSocietes(){
-//
-//	ParameterizedTypeReference<Resources<Service>> responseType= new ParameterizedTypeReference<Resources<Service>>() { };
-//	return restTemplate.exchange("http://services-service/services", HttpMethod.GET, null,responseType).getBody().getContent();
-//}
-
-
-//@RequestMapping(value="/enseignants")
-//public Collection<Enseignant> listEnseignant(){
-//	
-//	ParameterizedTypeReference<Resources<Enseignant>> responseType= new ParameterizedTypeReference<Resources<Enseignant>>() { };
-//	return restTemplate.exchange("http://enseignant-service/enseignants", HttpMethod.GET, null,responseType).getBody().getContent();
-//}
-
-//@RequestMapping(value="/diplomes")
-//public Collection<Diplome> listDiplomes(){
-//	
-//	ParameterizedTypeReference<Resources<Diplome>> responseType= new ParameterizedTypeReference<Resources<Diplome>>() { };
-//	return restTemplate.exchange("http://diplome-service/diplomes", HttpMethod.GET, null,responseType).getBody().getContent();
-//}
-
-@Autowired
-private IntegrationClient integrationClient;
-
-@RequestMapping("/ServiceByDiplome/{ueId}")
-proxy proxy(@PathVariable String ueId) { 
-   return new proxy(ueId, this.integrationClient.getService(ueId),this.integrationClient.getDips(ueId));
+	@Autowired
+	private RestTemplate restTemplate;
+	
+	@Autowired
+	private IntegrationClient integrationClient;
+	
+	/***************** AFFICHAGE *****************/
+	@GetMapping("/diplomes")
+	public Collection<Diplome> listDiplomes(){
+		ParameterizedTypeReference<Resources<Diplome>> responseType= new ParameterizedTypeReference<Resources<Diplome>>() { };
+		return restTemplate.exchange("http://diplome-service/diplomes", HttpMethod.GET, null,responseType).getBody().getContent();
 	}
-
+	
+	@GetMapping("/services")
+	public Collection<Service> listServices(){
+		ParameterizedTypeReference<Resources<Service>> responseType= new ParameterizedTypeReference<Resources<Service>>() { };
+		return restTemplate.exchange("http://services-service/services", HttpMethod.GET, null,responseType).getBody().getContent();
+	}
+	
+	//DRIBLE
+	@GetMapping("diplomesProxy/{ueId}")
+	Collection<Diplome> getDiplomeByUeId(@PathVariable String ueId) { 
+	   return this.integrationClient.getDips(ueId);
+	}
+	
+	//DRIBLE
+	@GetMapping("servicesProxy/{ueId}")
+	Collection<Service> getServicesByUeId(@PathVariable String ueId) { 
+	   return this.integrationClient.getService(ueId);
+	}
+	
+	/**************** AJOUTER DIPLOME & SERVICE****************************/
+	@PostMapping("/addDiplomeProxy")
+	public void addDiplome(@RequestBody Diplome dip) {
+		HttpEntity<Diplome> responseType = (HttpEntity<Diplome>) new HttpEntity<>(dip);
+		restTemplate.exchange("http://diplome-service/addDiplome", HttpMethod.POST, responseType, Diplome.class);
+	}
+	
+	@PostMapping("/addServiceProxy")
+	public void addService(@RequestBody Service service) {
+		HttpEntity<Service> responseType = (HttpEntity<Service>) new HttpEntity<>(service);
+		restTemplate.exchange("http://services-service/addService", HttpMethod.POST, responseType, Service.class);
+	}
+	
+	/**************** SUPPRIMER DIPLOME****************************/
+	@DeleteMapping("/deleteDiplomesProxy/{ueId}")
+	public void deleteDiplome(@PathVariable String ueId) {
+		restTemplate.delete("http://diplome-service/deleteDiplomes/{ueId}",ueId);
+	}
+	
+	@DeleteMapping("/deleteServicesProxy/{ueId}")
+	public void deleteService(@PathVariable String ueId) {
+		restTemplate.delete("http://services-service/deleteServices/{ueId}",ueId);
+	}
+	
+	/**************** PUT DIPLOME****************************/
+	@PutMapping("/diplomesProxy/info")
+	public @ResponseBody String updateDiplome(@RequestBody Diplome diplome){
+	 restTemplate.put("http://diplome-servic/diplomes/info", diplome);
+	 return "ok";
+	}
+	
+	@PutMapping("/servicesProxy/info")
+	public @ResponseBody String updateService(@RequestBody Service service){
+	 restTemplate.put("http://services-servic/services/info", service);
+	 return "ok";
+	}
+	
+	
+	/***************MAPPING ENTRE DIPLOME ET SERVICE******************/
+	@RequestMapping(value="/ServiceByDiplome/{ueId}", method = RequestMethod.GET)
+	 proxy proxy(@PathVariable String ueId) { 
+	   return new proxy(ueId, this.integrationClient.getService(ueId),this.integrationClient.getDips(ueId));
+		}
 }
+
 
 
 @FeignClient("diplome-service")
 interface diplomeClient{
-	@RequestMapping(method = RequestMethod.GET, value = "/diplomes/{ueId}")
+	@GetMapping("/diplomes/{ueId}")
 	Collection<Diplome> getDips(@PathVariable("ueId") String ueId);
+	
 }
 
 @FeignClient("services-service")
@@ -126,18 +148,13 @@ interface serviceClient{
 
 @Component
 class FeignExample implements CommandLineRunner {
-
-    private Log log = LogFactory.getLog(this.getClass().getName());
-    
+    private Log log = LogFactory.getLog(this.getClass().getName()); 
     @Override
     public void run(String... strings) throws Exception {
-
         log.info("------------------------------");
         log.info("Feign Example");
-
     }
-    
- }
+}
 
 @Component
 class IntegrationClient {
@@ -168,6 +185,7 @@ class IntegrationClient {
     public Collection<Service> getService(String ueId) {
         return this.serviceClient.getService(ueId);
     }
+
 
 }
 
@@ -306,11 +324,22 @@ class IntegrationClient {
 	}
 }
 
+
 class Diplome{
 	private Long id;
 	private String ueId;
 	private String semestre;
 	private String volumehoraire;
+	
+	
+	
+	public Diplome(Long id, String ueId, String semestre, String volumehoraire) {
+		super();
+		this.id = id;
+		this.ueId = ueId;
+		this.semestre = semestre;
+		this.volumehoraire = volumehoraire;
+	}
 	public Diplome(String ueId, String semestre) {
 		super();
 		this.ueId = ueId;
@@ -361,6 +390,12 @@ class proxy{
 	private Collection<Enseignant> enseignants;
 	private Collection<Diplome> dips;
 	private Collection<Service> Service;
+	
+	public proxy(Collection<Diplome> dips) {
+		super();
+		this.dips = dips;
+	}
+
 	public proxy(String ueId, Collection<Service> Service, Collection<Diplome> diplomes) {
 		super();
 		this.ueId = ueId;

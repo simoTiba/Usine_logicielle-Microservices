@@ -1,4 +1,5 @@
+org/opendevup/DiplomeRestController.class
 org/opendevup/DiplomeServiceApplication.class
-org/opendevup/EnseignantRestController.class
 org/opendevup/DiplomeRepository.class
 org/opendevup/Diplome.class
+org/opendevup/swagger/SwaggerConfig.class
