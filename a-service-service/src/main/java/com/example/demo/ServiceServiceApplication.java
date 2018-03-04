@@ -1,31 +1,42 @@
 package com.example.demo;
 
-import java.util.Arrays;
 import java.util.Collection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.Transient;
+import javax.transaction.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 
-
+@EnableJpaRepositories 
 @EnableEurekaClient
 @SpringBootApplication
+@EnableAutoConfiguration
 public class ServiceServiceApplication {
+	
 	public static void main(String[] args) {
 		ApplicationContext ctx=(ApplicationContext) SpringApplication.run(ServiceServiceApplication.class, args);
 		ServiceRepository ServiceRepository = ctx.getBean(ServiceRepository.class);
@@ -36,20 +47,57 @@ public class ServiceServiceApplication {
 		ServiceRepository.findAll().forEach(x->System.out.println(x.getId()));		
 	}	
 }
+
 @RepositoryRestResource
 interface ServiceRepository extends JpaRepository<Service, Long>{
 	Collection<Service> findByueId(String ueId);
+	
+	@Modifying
+    @Transactional
+    @Query("delete from Service s where s.ueId = ?1")
+    void deleteServiceByUeId(String ueId);
 }
 
 
 @RestController
-class EnseignantRestController{
+class ServiceRestController{
+	
 	@Autowired
 	private ServiceRepository serviceRepository;
 	
-	@RequestMapping("/services/{ueId}")
+	public static final Logger logger = LoggerFactory.getLogger(ServiceRestController.class);
+
+	@Autowired
+	ServiceRestController(ServiceRepository serviceRepository) {
+		this.serviceRepository = serviceRepository;
+	}
+	
+	/**************** AFICHAGE ****************************/
+	@GetMapping("/services/{ueId}")
 	Collection<Service> Service(@PathVariable String ueId){
 		return this.serviceRepository.findByueId(ueId);
+	}
+	
+	
+	/**************** AJOUTER ****************************/
+	@PostMapping("/addService")
+    public ResponseEntity <?> addService(@RequestBody Service service) {
+		serviceRepository.save(service);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+	
+	/**************** SUPPRIMER ****************************/
+	@DeleteMapping("/deleteServices/{ueId}")
+	public void deleteService(@PathVariable String ueId) {
+		serviceRepository.deleteServiceByUeId(ueId);
+	}
+	
+	
+	/**************** PUT ****************************/
+	@PutMapping("/services/info")
+	public @ResponseBody String updateDiplome(@RequestBody Service service){
+	 logger.info(service.toString());
+	 return "ok";
 	}
 }
 
